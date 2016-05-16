@@ -1,0 +1,32 @@
+{
+    "name": "colee/yii2-jos-sdk",
+    "type": "library",
+    "description": "jos-sdk library for Yii2 framework",
+    "keywords": [
+        "yii2",
+        "colee",
+        "jos SDK",
+        "yii2-jos-sdk",
+        "widget"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/colee1985/yii2-jos-sdk",
+    "minimum-stability": "stable",
+    "authors": [
+        {
+            "name": "colee",
+            "email": "5969226@qq.com",
+            "issues": "https://github.com/colee1985/yii2-jos-sdk/issues?state=open",
+        	"source": "https://github.com/colee1985/yii2-jos-sdk"
+        }
+    ],
+    "require": {
+        "php" : "~5.5|~7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "colee\\jd\\jos\\": ""
+        }
+    }
+}
+
