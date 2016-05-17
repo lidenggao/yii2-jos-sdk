@@ -6,6 +6,7 @@
  * This is not a free software, without any authorization is not allowed to use and spread.
  * ==============================================
  * 这是基于京东SDK封装的YII2应用包
+ * 注意：因为原SDK存在缺陷，原JdClient中的记录错误日志到文件的代码已被我删除
  * @see https://github.com/colee1985/yii2-jos-sdk/blob/master/README.md
  * @param unknowtype
  * @return return_type
@@ -22,7 +23,6 @@ class JosSdk extends Component
     public $appSecret;
     public $redirectUri;
     private $_client;
-    private 
 
     public function init()
     {
