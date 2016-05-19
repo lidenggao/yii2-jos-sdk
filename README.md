@@ -1,8 +1,9 @@
 ﻿# yii2-jos-sdk
-============
+====
 京东JOS SDK
-------------
+----
 ### 使用方法：
+------------
 添加配置  
 ```php
     'components' => [
@@ -15,12 +16,15 @@
     ],
 ```
 使用示例：  
+----------
+获取登录URL  
 ```php
-//获取登录URL
 $url = \Yii::$app->jos->getLoginUrl('union');
 echo Html::a('login', $url,[
     'target'=>'_blank'
 ]);
+```
+```php
 /**
  * 回调地址
  * @param unknown $code
@@ -31,7 +35,8 @@ public function actionCallback($code, $state=false)
     $data = \Yii::$app->jos->getTokenByCode($code, $state);
     var_dump($data);
 }
-
+```
+```php
 //获取单条推广代码
 $res = \Yii::$app->jos->execute('jingdong.service.promotion.getcode', [
     'promotionType'=>'7',
