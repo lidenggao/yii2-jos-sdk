@@ -29,6 +29,16 @@ echo Html::a('login', $url,[
  * 回调地址
  * @param unknown $code
  * @param string $state
+ * @return array eg: {
+ *    "access_token": "3d951daf-dc60-4808-929c-c578b2587124",
+ *    "code": 0,
+ *    "expires_in": 86399,
+ *    "refresh_token": "465a34ff-dbd4-4930-a87a-80d327c15d20",
+ *    "time": "1463473099215",
+ *    "token_type": "bearer",
+ *    "uid": "2247093760",
+ *    "user_nick": "e家洁trs"
+ *  }
  */
 public function actionCallback($code, $state=false)
 {
