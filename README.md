@@ -16,6 +16,22 @@
 ```
 使用示例：  
 ```php
+//获取登录URL
+$url = \Yii::$app->jos->getLoginUrl('union');
+echo Html::a('login', $url,[
+    'target'=>'_blank'
+]);
+/**
+ * 回调地址
+ * @param unknown $code
+ * @param string $state
+ */
+public function actionCallback($code, $state=false)
+{
+    $data = \Yii::$app->jos->getTokenByCode($code, $state);
+    var_dump($data);
+}
+
 //获取单条推广代码
 $res = \Yii::$app->jos->execute('jingdong.service.promotion.getcode', [
     'promotionType'=>'7',
