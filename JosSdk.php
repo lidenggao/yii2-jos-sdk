@@ -3,17 +3,12 @@
  * ==============================================
  * Copy right 2015-2016
  * ----------------------------------------------
- * This is not a free software, without any authorization is not allowed to use and spread.
+ * 这是CoLee封装的YII2京东SDK包
  * ==============================================
- * 这是基于京东SDK封装的YII2应用包
- * 注意：因为原SDK存在缺陷，原JdClient中的记录错误日志到文件的代码已被我删除
  * @see https://github.com/colee1985/yii2-jos-sdk/blob/master/README.md
- * @param unknowtype
- * @return return_type
  * @author: CoLee
  */
 namespace colee\jd;
-require_once(dirname(__FILE__)."/jos-autoloader.php");
 
 use yii\base\Component;
 use yii\web\BadRequestHttpException;
@@ -22,18 +17,20 @@ class JosSdk extends Component
     public $appKey;
     public $appSecret;
     public $redirectUri;
-    private $_client;
+    
+    public $serverUrl = "http://api.jd.com/routerjson";
+	public $connectTimeout = 0;
+	public $readTimeout = 0;
+	public $version = "2.0";
+	public $format = "json";
+	private $charset_utf8 = "UTF-8";
+	private $json_param_key = "360buy_param_json";
 
     public function init()
     {
         if (empty($this->appKey) || empty($this->appSecret) || empty($this->redirectUri)){
             throw new InvalidParamException('appKey,appSecret,redirectUri不能为空');
         }
-        $c = new \JdClient();
-        $c->appKey = $this->appKey;
-        $c->appSecret = $this->appSecret;
-        $c->serverUrl = "https://api.jd.com/routerjson";
-        $this->_client = $c;
     }
     
     /**
@@ -88,37 +85,159 @@ class JosSdk extends Component
         
         return $data;
     }
+
+    //////////////////////// 以下从JD SDK复制出来修改的 //////////////////////////////
+
+	protected function generateSign($params)
+	{
+		ksort($params);
+		$stringToBeSigned = $this->appSecret;
+		foreach ($params as $k => $v)
+		{
+			if("@" != substr($v, 0, 1))
+			{
+				$stringToBeSigned .= "$k$v";
+			}
+		}
+		unset($k, $v);
+		$stringToBeSigned .= $this->appSecret;
+		return strtoupper(md5($stringToBeSigned));
+	}
+
+	/**
+	 * CURL 构造方法
+	 * @param unknown $url
+	 * @param string $postFields
+	 * @throws Exception
+	 */
+	protected function curl($url, $postFields = null)
+	{
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_FAILONERROR, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		if ($this->readTimeout) {
+			curl_setopt($ch, CURLOPT_TIMEOUT, $this->readTimeout);
+		}
+		if ($this->connectTimeout) {
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
+		}
+		//https 请求
+		if(strlen($url) > 5 && strtolower(substr($url,0,5)) == "https" ) {
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+		}
+
+		if (is_array($postFields) && 0 < count($postFields))
+		{
+			$postBodyString = "";
+			$postMultipart = false;
+			foreach ($postFields as $k => $v)
+			{
+				if("@" != substr($v, 0, 1))//判断是不是文件上传
+				{
+					$postBodyString .= "$k=" . urlencode($v) . "&"; 
+				}
+				else//文件上传用multipart/form-data，否则用www-form-urlencoded
+				{
+					$postMultipart = true;
+				}
+			}
+			unset($k, $v);
+			curl_setopt($ch, CURLOPT_POST, true);
+			if ($postMultipart)
+			{
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+			}
+			else
+			{
+				curl_setopt($ch, CURLOPT_POSTFIELDS, substr($postBodyString,0,-1));
+			}
+		}
+		$reponse = curl_exec($ch);
+		
+		if (curl_errno($ch))
+		{
+			throw new \Exception(curl_error($ch),0);
+		}
+		else
+		{
+			$httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			if (200 !== $httpStatusCode)
+			{
+				throw new \Exception($reponse,$httpStatusCode);
+			}
+		}
+		curl_close($ch);
+		return $reponse;
+	}
     
-    /**
-     * 获取单条推广代码
-     * @param string $accessToken eg: '3d951daf-dc60-4808-929c-c578b2587124'
-     * @see https://jos.jd.com/api/detail.htm?apiName=jingdong.service.promotion.getcode&id=629
-     */
-    public function servicePromotionGetcode($accessToken)
-    {
-        $req = new \ServicePromotionGetcodeRequest();
-        
-        $req->setPromotionType( 123 );
-        $req->setMaterialId( "jingdong" );
-        $req->setUnionId( 1000037912 );
-        $req->setSubUnionId( "15110249233" );
-        $req->setSiteSize( "jingdong" );
-        $req->setSiteId( "jingdong" );
-        $req->setChannel( "jingdong" );
-        $req->setWebId( "413502023" );
-        $req->setExtendId( "jingdong" );
-        $req->setExt1( "jingdong" );
-        
-        $resp = $this->_client->execute($req, $accessToken);
-        var_dump($resp);exit;
-    }
-    
-    /**
-     * 原SDK的方法支持
-     * @see \yii\base\Component::__call()
-     */
-    public function __call($method_name, $args)
-    {
-        return call_user_func_array([$this->_client, $method_name],$args);
-    }
+	/**
+	 * 执行API查询
+	 * @param string $apiName 接口名称，如： jingdong.UnionOrderService.queryCommisions
+	 * @param array $apiParams  接口参数
+	 * @param string $access_token 
+	 * @return mixed
+	 */
+	public function execute($apiName, $apiParams, $access_token = null)
+	{
+	    $apiParams = json_encode($apiParams);
+		//组装系统参数
+		$sysParams["app_key"] = $this->appKey;
+		$sysParams["v"] = $this->version;
+		$sysParams["method"] = trim($apiName);
+		$sysParams["timestamp"] = date("Y-m-d H:i:s");
+		if (null != $access_token)
+		{
+			$sysParams["access_token"] = $access_token;
+		}
+
+		//获取业务参数
+		$sysParams[$this->json_param_key] = $apiParams;
+
+		//签名
+		$sysParams["sign"] = $this->generateSign($sysParams);
+		//系统参数放入GET请求串
+		$requestUrl = $this->serverUrl . "?";
+		foreach ($sysParams as $sysParamKey => $sysParamValue)
+		{
+			$requestUrl .= "$sysParamKey=" . urlencode($sysParamValue) . "&";
+		}
+		//发起HTTP请求
+		try
+		{
+			$resp = $this->curl($requestUrl, $apiParams);
+		}
+		catch (Exception $e)
+		{
+			$result->code = $e->getCode();
+			$result->msg = $e->getMessage();
+			return $result;
+		}
+
+		//解析JD返回结果
+		$respWellFormed = false;
+		if ("json" == $this->format)
+		{
+			$respObject = json_decode($resp);
+			if (null !== $respObject)
+			{
+				$respWellFormed = true;
+				foreach ($respObject as $propKey => $propValue)
+				{
+					$respObject = $propValue;
+				}
+			}
+		}
+		else if("xml" == $this->format)
+		{
+			$respObject = @simplexml_load_string($resp);
+			if (false !== $respObject)
+			{
+				$respWellFormed = true;
+			}
+		}
+
+		return $respObject;
+	}
 }
