@@ -8,7 +8,7 @@
 ```php
     'components' => [
         'jos'=>[
-            'class'=>'colee\jd\JosSdk',
+            'class'=>'colee\jd\jos\JosSdk',
             'appKey'=>'…………',
             'appSecret'=>'…………',
             'redirectUri'=>'http://127.0.0.1:8081/jos/callback'
