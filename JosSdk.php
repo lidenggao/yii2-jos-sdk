@@ -8,7 +8,7 @@
  * @see https://github.com/colee1985/yii2-jos-sdk/blob/master/README.md
  * @author: CoLee
  */
-namespace colee\jd;
+namespace colee\jd\jos;
 
 use yii\base\Component;
 use yii\web\BadRequestHttpException;
