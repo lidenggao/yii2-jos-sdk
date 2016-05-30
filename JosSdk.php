@@ -186,7 +186,7 @@ class JosSdk extends Component
 		$sysParams["app_key"] = $this->appKey;
 		$sysParams["v"] = $this->version;
 		$sysParams["method"] = trim($apiName);
-		$sysParams["timestamp"] = date("Y-m-d H:i:s");
+		$sysParams["timestamp"] = gmdate('Y-m-d H:i:s', time() + 3600 * 8);
 		if (null != $access_token)
 		{
 			$sysParams["access_token"] = $access_token;
