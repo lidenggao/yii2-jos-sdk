@@ -69,18 +69,43 @@ class JosSdk extends Component
     {
         $params = [
             'grant_type'=>'authorization_code',
-            'client_id'=>\Yii::$app->jos->appKey,
-            'client_secret'=>\Yii::$app->jos->appSecret,
+            'client_id'=>$this->appKey,
+            'client_secret'=>$this->appSecret,
             'redirect_uri'=>$this->redirectUri,
             'code'=>$code,
             'state'=>$state,
         ];
-        $url = 'https://auth.360buy.com/oauth/token?'.http_build_query($params);
+        $url = 'https://auth.jd.com/oauth/token?'.http_build_query($params);
         $data = file_get_contents($url);
         $data = iconv('GBK', 'UTF-8', $data);
         $data = json_decode($data, true);
         if (empty($data['access_token'])){
             throw new BadRequestHttpException('获取JD ACCESS TOKEN 失败');
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * 刷新TOKEN
+     * 在Access token的有效内可以通过Refresh token来延长Access token的时效。
+     */
+    public function refreshToken($refresh_token, $state='cps')
+    {
+        $data = [
+            'grant_type'=>'refresh_token',
+            'client_id'=>$this->appKey,
+            'client_secret'=>$this->appSecret,
+            'refresh_token'=>$refresh_token,
+            'code'=>'read',
+            'state'=>$state,
+        ];
+        $url = 'https://oauth.jd.com/oauth/token';
+        $data = $this->curl($url, $data);
+        $data = iconv('GBK', 'UTF-8', $data);
+        $data = json_decode($data, true);
+        if (empty($data['access_token'])){
+            throw new BadRequestHttpException('刷新TOKEN 失败');
         }
         
         return $data;
