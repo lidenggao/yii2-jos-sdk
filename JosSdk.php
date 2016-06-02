@@ -12,6 +12,7 @@ namespace colee\jd\jos;
 
 use yii\base\Component;
 use yii\web\BadRequestHttpException;
+use yii\web\NotAcceptableHttpException;
 class JosSdk extends Component
 {
     public $appKey;
@@ -75,7 +76,8 @@ class JosSdk extends Component
             'code'=>$code,
             'state'=>$state,
         ];
-        $url = 'https://auth.jd.com/oauth/token?'.http_build_query($params);
+        // 注意这里的域名不能用jd.com，原因只有JD知道
+        $url = 'https://auth.360buy.com/oauth/token?'.http_build_query($params);
         $data = file_get_contents($url);
         $data = iconv('GBK', 'UTF-8', $data);
         $data = json_decode($data, true);
@@ -101,14 +103,16 @@ class JosSdk extends Component
             'state'=>$state,
         ];
         $url = 'https://oauth.jd.com/oauth/token';
-        $data = $this->curl($url, $data);
-        $data = iconv('GBK', 'UTF-8', $data);
-        $data = json_decode($data, true);
-        if (empty($data['access_token'])){
-            throw new BadRequestHttpException('刷新TOKEN 失败');
+        $res = $this->curl($url, $data);
+        $res = iconv('GBK', 'UTF-8', $res);
+        $result = json_decode($res, true);
+        if (isset($result['error_description'])){
+            throw new NotAcceptableHttpException($result['error_description'], 1);
+        }elseif (empty($result['access_token'])){
+            throw new NotAcceptableHttpException('刷新TOKEN 失败:'.$res, 1);
         }
         
-        return $data;
+        return $result;
     }
 
     //////////////////////// 以下从JD SDK复制出来修改的 //////////////////////////////
